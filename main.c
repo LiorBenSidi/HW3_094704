@@ -5,7 +5,7 @@ typedef struct Node {
     int data;
     struct Node *next;
     struct Node *prev;
-} node_t; // struct that represents a bidirectional node, for using at Traverse linked list
+} node_t; // struct that represents a node, for using at doubly linked-list
 
 typedef struct {
     node_t *head;
@@ -14,8 +14,7 @@ typedef struct {
 
 /* This function is a helping function that used to insert a node at the end of
  * the linked-list. similar implementation to the function we have already
- * seen at the tutorial
- * */
+ * seen at the tutorial */
 void insert_at_end(int data, node_t *head) {
     // Dynamically allocate memory for a new pointer to node
     node_t *lk = (node_t*) malloc(sizeof(node_t));
@@ -48,6 +47,7 @@ void insert_at_end(int data, node_t *head) {
     // sets the "prev" attribute of the new node to the former last node
     lk->prev = linked_list;
 }
+
 /* This function is used to check if there is already a node with the same data
  * we asked to enter to the Set s, in the linked-list that represents the Set s
  */
@@ -81,20 +81,24 @@ void set_init(Set *s, int v[], int num_elements_in_v) {
     if (s == NULL) { // Handle the case when the given pointer is point to NULL
         printf("Error: the given pointer is point to NULL\n");
         return;
-    } else if (s->size == 0) { // check if the given Set is empty
-        printf("{ }\n");
-        return;
     }
 
     // Dynamically allocate memory for the new head "attribute" in Set s
     s->head = (node_t*) malloc(sizeof(node_t));
-
-    // Check if memory allocation was successful
     if (s->head == NULL) {
         printf("Error: Out of Memory\n");
         return;
     } else { // Memory allocation was successful
         printf("Memory allocated successfully\n");
+    }
+
+    // Initialize the prev pointer of the head node to NULL
+    s->head->prev = NULL;
+
+    if (num_elements_in_v == 0) { // Handle the case when the given array is empty
+        s->head->next = NULL;
+        s->size = 0;
+        return;
     }
 
     // Initialize the next pointer of the node that "head" is point to, to NULL
@@ -126,7 +130,7 @@ void set_print(Set *s) {
         printf("{ }\n");
         return;
     } else if (s->head == NULL) {
-        printf("Error: The 'head' attribute is point to NULL");
+        printf("Error: The 'head' attribute is point to NULL\n");
         return;
     }
 
@@ -166,14 +170,17 @@ void set_print(Set *s) {
 
         // if we have not found a duplicate of the current node, prints its data
         if (!flag_duplicate) {
-            printf("%d ", current->data);
+            printf("%d", current->data);
+            if (current->next != NULL) {
+                printf(", ");
+            }
         }
 
         // gets the next node
         current = current->next;
     }
 
-    printf("}\n");
+    printf(" }\n");
 }
 
 // Helper function that used check if the given element is in the array already
@@ -194,60 +201,86 @@ int is_element_in_array(int element, int *array, int array_size) {
 /* This function gets the address of two instances of sets,
  * prints each one of them,
  * and returns a new set(using "set_init") of the union of them. */
-//TODO: לשנות "סגנון" כתיבה של הקוד
 Set* set_union(Set *a, Set *b) {
-    // Input validation
-    if (a == NULL || b == NULL) {
-        return NULL; // Cannot perform union on NULL sets
+    // checks if one or both of the given sets are NULL
+    if (a == NULL && b == NULL) {
+        printf("Error: both sets are NULL.\n");
+    } else if (a == NULL) {
+        printf("Error: set a is NULL.\n");
+    } else if (b == NULL) {
+        printf("Error: set b is NULL.\n");
     }
 
-    //prints set a
+    // Print the sets
+    printf("Set a: ");
     set_print(a);
-    //prints set b
+    printf("Set b: ");
     set_print(b);
 
-    // Allocate memory for the temporary array, handle empty sets by initializing count to 0
-    int count = 0;
+    // Allocate memory for a temporary array that we will send to "set_init"
     int *temp = (int *)malloc(sizeof(int) * (a->size + b->size));
+
+    // Check if memory allocation was successful
     if (temp == NULL) {
+        printf("Error: Out of Memory\n");
         return NULL; // Memory allocation failed
+    } else { // Memory allocation was successful
+        printf("Memory allocated successfully\n");
     }
 
-    // Process set a, skip if set is empty
-    node_t *current = a->head ? a->head->next : NULL;
-    while (current) {
-        temp[count++] = current->data;
-        current = current->next;
-    }
+    // Initialize a counter to know the number of unique elements
+    int count = 0;
 
-    // Process set b, adding only unique elements
-    current = b->head ? b->head->next : NULL;
-    while (current) {
+    // initialize a pointer to the node that "head" is point to in Set a
+    node_t *current = a->head;
+    // gets the address of the node that is next to the first node
+    current = current->next;
+    // while the "next" attribute of the current node is not point to NULL
+    while (current != NULL) {
+        // checks for duplicates
         if (!is_element_in_array(current->data, temp, count)) {
-            // Check for allocation failure inside the loop for each new element
-            if (count >= (a->size + b->size)) {
-                // Resize temp array if more space is needed
-                int *new_temp = (int *)realloc(temp, sizeof(int) * (count + 1));
-                if (new_temp == NULL) {
-                    free(temp); // Free temp before returning to avoid memory leak
-                    return NULL; // Memory allocation failed
-                }
-                temp = new_temp;
-            }
-            temp[count++] = current->data;
+            // adds the "data" of the current node to the cell at index count
+            temp[count] = current->data;
+            count++;
         }
+        // gets the address of the node that is next to the current node
         current = current->next;
     }
 
-    // Initialize the new set with the unique elements
-    Set *union_set = (Set *)malloc(sizeof(Set));
-    if (union_set == NULL) {
-        free(temp); // Clean up temp array before returning
-        return NULL; // Memory allocation failed
+    // initialize a pointer to the node that "head" is point to in Set a
+    current = b->head;
+    // gets the address of the node that is next to the first node
+    current = current->next;
+    // while the "next" attribute of the current node is not point to NULL
+    while (current != NULL) {
+        // checks for duplicates
+        if (!is_element_in_array(current->data, temp, count)) {
+            // adds the "data" of the current node to the cell at index count
+            temp[count] = current->data;
+            count++;
+        }
+        // gets the address of the node that is next to the current node
+        current = current->next;
     }
-    set_init(union_set, temp, count);
-    free(temp); // No longer needed, free the temporary array
 
+    // Allocate memory for a Set that we will send to set_init
+    Set *union_set = (Set *)malloc(sizeof(Set));
+    // Check if memory allocation was successful
+    if (union_set == NULL) {
+        // before exist, free the memory of "temp"
+        free(temp);
+        printf("Error: Out of Memory\n");
+    } else { // Memory allocation was successful
+        printf("Memory allocated successfully\n");
+    }
+
+    // Creates the union Set, using "set_int"
+    set_init(union_set, temp, count);
+
+    // before exist, free the memory of "temp"
+    free(temp);
+
+    // Return a pointer to the union Set
     return union_set;
 }
 
@@ -255,149 +288,227 @@ Set* set_union(Set *a, Set *b) {
  * prints each one of them,
  * and returns the intersect of them,
  * while the returned set must be one of the given sets(in place). */
-//TODO: לשנות "סגנון" כתיבה של הקוד
 Set* set_intersect(Set *a, Set *b) {
-    // Validate input sets
-    if (a == NULL || b == NULL) {
-        return NULL;
+    // checks if one or both of the given sets are NULL
+    if (a == NULL && b == NULL) {
+        printf("Error: both sets are NULL.\n");
+    } else if (a == NULL) {
+        printf("Error: set a is NULL.\n");
+    } else if (b == NULL) {
+        printf("Error: set b is NULL.\n");
     }
 
-    //prints set a
+    // Print the sets
+    printf("Set a: ");
     set_print(a);
-    //prints set b
+    printf("Set b: ");
     set_print(b);
 
-    // Decide which set to modify; here we choose the first set 'a'
+    // we have chosen to use Set a, as the Set that will store the intersect
     Set *result_set = a;
-    node_t *current = result_set->head->next; // Start with the first actual data node
+    // initialize a pointer to the node that "head" is point to in Set a
+    node_t *current = result_set->head;
+    // gets the address of the node that is next to the first node
+    current = current->next;
+    // initialize a pointer to the "head" attribute,
+    // and we can use a "prev" variable cause the node struct we have build is
+    // a doubly linked-list
     node_t *prev = result_set->head;
 
+
+    // while the "next" attribute of the current node is not point to NULL
     while (current != NULL) {
-        // If the current element is not in set 'b', remove it from 'a'
+        // checks if the current element is not in Set b
         if (!is_exist_already(b, current->data)) {
+            // if the data is not in Set a, remove it from Set a
             prev->next = current->next;
             if (current->next != NULL) {
                 current->next->prev = prev;
             }
-            free(current); // Free the memory of the removed node
-            current = prev->next; // Move to the next node
-            result_set->size--; // Decrement the size of the set
+            // move to the next node
+            current = current->next;
+            // decrease the size if the intersect by 1
+            result_set->size--;
         } else {
+            // if the current node in Set a, have a data that is already in
+            // set b, move to the next node
             prev = current;
-            current = current->next; // Move to the next node
+            current = current->next;
         }
     }
 
-    // Since we've modified the set 'a', it now contains the intersection
+    // Return a pointer to the intersect Set
     return result_set;
 }
 
 /* This function gets the address of two instances of sets,
  * prints each one of them,
- * and returns the intersect of them,
+ * and returns the difference a/b,
  * while the returned set can be one of the given sets(in place),
  * or a new set. */
-//TODO: לשנות "סגנון" כתיבה של הקוד
 Set* set_diff(Set *a, Set *b) {
-    // Validate input sets
-    if (a == NULL || b == NULL) {
-        printf("One or both sets are NULL.\n");
-        return NULL;
+    // checks if one or both of the given sets are NULL
+    if (a == NULL && b == NULL) {
+        printf("Error: both sets are NULL.\n");
+    } else if (a == NULL) {
+        printf("Error: set a is NULL.\n");
+    } else if (b == NULL) {
+        printf("Error: set b is NULL.\n");
     }
 
-    // Print set a
+    // Print the sets
+    printf("Set a: ");
     set_print(a);
-    // Print set b
+    printf("Set b: ");
     set_print(b);
 
-    // Iterate over set a and remove elements that are also in set b
-    node_t *current = a->head->next; // Start from the first actual data node
+    // initialize a pointer to the node that "head" is point to in Set a
+    node_t *current = a->head;
+    // gets the address of the node that is next to the first node
+    current = current->next;
+    // initialize a pointer to the "head" attribute,
+    // and we can use a "prev" variable cause the node struct we have build is
+    // a doubly linked-list
     node_t *prev = a->head;
 
+    // while the "next" attribute of the current node is not point to NULL
     while (current != NULL) {
-        // Check if the current element is in set b
-        if (is_exist_already(b, current->data )) {
-            // Remove the current element from set a
+        // checks if the current element is in Set b
+        if (is_exist_already(b, current->data)) {
+            // if the data is in Set b, we should remove it from Set a
             prev->next = current->next;
             if (current->next != NULL) {
                 current->next->prev = prev;
             }
-            free(current); // Free the node
-            current = prev->next; // Move to the next node
-            a->size--; // Decrement the size of set a
+            // move to the next node
+            current = current->next;
+            // decrease the size if the difference by 1
+            a->size--;
         } else {
+            // if the current node in Set a have a data that is already in
+            // set b, move to the next node, so we are keeping it in set a
             prev = current;
-            current = current->next; // Move to the next node
+            current = current->next;
         }
     }
 
-    // The modified set a now contains the set difference
+    // Return a pointer to the difference Set
     return a;
 }
 
 int main() {
-    // Edge Case: Initialize with duplicates
+
+    printf("Initialize with duplicates\n");
     int v1[] = {1, 2, 2, 3};
     Set *set1 = (Set *)malloc(sizeof(Set));
     set_init(set1, v1, 4);
     set_print(set1); // Expected output: { 1 2 3 }
+    printf("\n");
 
-    // Edge Case: Initialize with negative numbers
+
+    printf("Initialize with negative numbers\n");
     int v2[] = {-1, -2, -3};
     Set *set2 = (Set *)malloc(sizeof(Set));
     set_init(set2, v2, 3);
     set_print(set2); // Expected output: { -1 -2 -3 }
+    printf("\n");
 
-    // Edge Case: Initialize an empty set
+    printf("Initialize an empty set\n");
     int v3[] = {};
     Set *set3 = (Set *)malloc(sizeof(Set));
     set_init(set3, v3, 0);
     set_print(set3); // Expected output: { }
+    printf("\n");
 
-    // Edge Case: Union of a set with itself
+    printf("Union of a set with itself\n");
     Set *union_self_set = set_union(set1, set1);
     set_print(union_self_set); // Expected output: { 1 2 3 }
+    printf("\n");
 
-    // Edge Case: Intersect of disjoint sets
+    printf("Intersect of disjoint sets\n");
     int v4[] = {4, 5, 6};
     Set *set4 = (Set *)malloc(sizeof(Set));
     set_init(set4, v4, 3);
     Set *intersect_disjoint_set = set_intersect(set2, set4);
     set_print(intersect_disjoint_set); // Expected output: { }
+    printf("\n");
 
-    // Edge Case: Difference between a set and itself
+    printf("Difference between a set and itself\n");
     Set *diff_self_set = set_diff(set1, set1);
     set_print(diff_self_set); // Expected output: { }
+    printf("\n");
 
-    // Edge Case: Difference where second set is a subset
-    //TODO: why not working properly
-    int v5[] = {2, 3};
-    Set *set5 = (Set *)malloc(sizeof(Set));
-    set_init(set5, v5, 2);
-    Set *diff_subset_set = set_diff(set1, set5);
-    set_print(diff_subset_set); // Expected output: { 1 }
+    printf("Difference where second set is a subset\n");
+    set1 = (Set *)malloc(sizeof(Set));
+    set_init(set1, v1, 4);
+   int v5[] = {2, 3};
+   Set *set5 = (Set *)malloc(sizeof(Set));
+   set_init(set5, v5, 2);
+   Set *diff_subset_set = set_diff(set1, set5);
+   set_print(diff_subset_set); // Expected output: { 1 }
+   printf("\n");
 
-    // Edge Case: Print a set with one element
-    //TODO: why not working properly
-    int v6[] = {1};
-    Set *set6 = (Set *)malloc(sizeof(Set));
-    set_init(set6, v6, 1);
-    set_print(set6); // Expected output: { 1 }
+    printf("Print a set with one element\n");
+   int v6[] = {1};
+   Set *set6 = (Set *)malloc(sizeof(Set));
+   set_init(set6, v6, 1);
+   set_print(set6); // Expected output: { 1 }
+    printf("\n");
 
-    // Edge Case: Intersect with one set empty
+    printf("Intersect with one set empty\n");
     Set *intersect_empty_set = set_intersect(set3, set1);
     set_print(intersect_empty_set); // Expected output: { }
+     printf("\n");
 
-    // Edge Case: Union with one set empty
-    //TODO: why not working properly
+    printf("Union with one set empty\n");
     Set *union_empty_set = set_union(set3, set1);
     set_print(union_empty_set); // Expected output: { 1 2 3 }
+    printf("\n");
 
-    // Edge Case: Difference with one set empty
+    printf("Difference with one set empty\n");
     Set *diff_empty_set = set_diff(set3, set1);
     set_print(diff_empty_set); // Expected output: { }
+    printf("\n");
 
-    // TODO: Add memory deallocation for all initialized sets
+    printf("Test with sets having overlapping elements\n");
+    int v7[] = {1, 2, 3, 4};
+    Set *set7 = (Set *)malloc(sizeof(Set));
+    set_init(set7, v7, 4);
+    set_print(set7);
+    int v8[] = {3, 4, 5, 6};
+    Set *set8 = (Set *)malloc(sizeof(Set));
+    set_init(set8, v8, 4);
+    set_print(set8);
+    printf("\n");
+
+    printf("Union with overlapping elements\n");
+    Set *union_overlap = set_union(set7, set8);
+    set_print(union_overlap); // Expected output: { 1 2 3 4 5 6 }
+    printf("\n");
+
+    printf("Intersection with overlapping elements\n");
+    Set *intersect_overlap = set_intersect(set7, set8);
+    set_print(intersect_overlap); // Expected output: { 3 4 }
+    printf("\n");
+
+    printf("Difference with overlapping elements\n");
+    set7 = (Set *)malloc(sizeof(Set));
+    set_init(set7, v7, 4);
+    Set *diff_overlap = set_diff(set7, set8);
+    set_print(diff_overlap); // Expected output: { }
+    printf("\n");
+
+    printf("Test with sets having duplicate elements in the input array\n");
+    int v9[] = {1, 2, 2, 3, 3, 3};
+    Set *set9 = (Set *)malloc(sizeof(Set));
+    set_init(set9, v9, 6);
+    set_print(set9); // Expected output: { 1 2 3 }
+    printf("\n");
+
+    printf("Test the difference when the second set is empty\n");
+    Set *diff_second_empty = set_diff(set7, set3);
+    set_print(diff_second_empty); // Expected output: { }
+    printf("\n");
 
     return 0;
 }
